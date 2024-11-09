@@ -1,34 +1,4 @@
-from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional
+# import bica.ms.interface
+# from example import 
 
-type Actor = Any # TODO:
-type Role = str
-type BindedSchema = Any # TODO:
-
-@dataclass
-class MoralSchema:
-    interface: MoralSchemaInterface
-    fabula: Fabula
-
-
-@dataclass
-class MoralSchemaInterface:
-    roles: List[Role]
-    tryBind: Callable[[List[Actor]], Optional[BindedSchema]]
-
-@dataclass
-class Fabula:
-    pass
-
-@dataclass
-class Agency:
-    #TODO: mood: 
-    perspective: Role
-
-
-@dataclass
-class BindedSchema:
-    fabula: Fabula
-    actors: List[Role, Actor]
-
-    
+from examples.chatbot import chatbot
