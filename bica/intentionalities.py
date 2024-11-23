@@ -8,7 +8,7 @@ IntentionalityAxis: TypeAlias = str
 
 @dataclass
 class InSpace:
-    axes: set[IntentionalityAxis]
+    axes: list[IntentionalityAxis]
 
     def __eq__(self, other):
         return self.axes == other.axes
@@ -79,6 +79,9 @@ class InVec:
         for v in self._by_name.values():
             n += v * v
         return sqrt(n)
+    
+    def __iter__(self):
+        return map(lambda x: self._by_name[x], self.space.axes)
     
     def copy(self):
         c = InVec(self.space)

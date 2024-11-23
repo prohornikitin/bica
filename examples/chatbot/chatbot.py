@@ -9,7 +9,7 @@ from bica.base import Action, Actor, ActorId, ActionId, ActionEffect
 from bica.globals import AbsGlobals, IGlobals
 from bica.ms.interface import MsState
 from bica.main import ActionRequest, Main
-from .intentionalities import intensional_calc
+from .intentionalities import intensional_calc, sem_space1, sem_space2, sem_space3
 from .gpt import gpt, Message
 from . import prompts
 
@@ -29,6 +29,7 @@ class ActionIdEnum(StrEnum):
 class TalkPhase:
     available_action: ActionIdEnum
     initial_feelings: InVec
+    sem_space: set[str]
 
     def __hash__(self):
         return id(self)
@@ -43,41 +44,45 @@ class FabulaNode:
 
 phases = [
     TalkPhase(ActionIdEnum.acquaintance_talk,
-        InVec(InSpace({
+        InVec(InSpace([
             'коммуникативность',
             'дружелюбность',
             'любознательность',
             'внимательность',
             'инициативность',
-        }), [0.7, 0.7, 0.4, 0.5, 0.6]),
+        ]), [0.7, 0.7, 0.4, 0.5, 0.6]),
+        sem_space1,
     ),
     TalkPhase(ActionIdEnum.interests_talk,
-        InVec(InSpace({
+        InVec(InSpace([
             'уверенность',
             'критичность',
             'инициативность',
             'заботливость',
             'внимательность',
             'коммуникабельность',
-        }), [0.6, 0.0, 0.6, 0.2, 0.5, 0.7]),
+        ]), [0.6, 0.0, 0.6, 0.2, 0.5, 0.7]),
+        sem_space2,
     ),
     TalkPhase(ActionIdEnum.common_interests_talk,
-        InVec(InSpace({
+        InVec(InSpace([
             'коммуникабельность',
             'целеустремленность',
             'оптимизм',
             'амбициозность',
             'проницательность',
-        }), [0.5, 0.5, 0.4, 0.5, 0.2]),
+        ]), [0.5, 0.5, 0.4, 0.5, 0.2]),
+        sem_space3,
     ),
     TalkPhase(ActionIdEnum.finish_talk,
-        InVec(InSpace(set())),
+        InVec(InSpace([])),
+        [],
     ),
 ]
 
 
 axes = map(lambda x: x.initial_feelings.space.axes, phases)
-global_space = InSpace(reduce(lambda acc, x: acc|x, axes))
+global_space = InSpace(reduce(lambda acc, x: set(acc)|set(x), axes))
 
 
 ai = Actor('ai', InVec(global_space))
@@ -138,8 +143,7 @@ class GlobalDefs(AbsGlobals):
             phase = phases[1]
         elif action_id == ActionIdEnum.common_interests_talk:
             phase = phases[2]
-        space = phase.initial_feelings.space
-        effect = intensional_calc(space, text).unproject(InVec(self.space))
+        effect = intensional_calc(phase.sem_space, phase.initial_feelings.space, text).unproject(InVec(self.space))
         return ActionEffect(InVec(self.space), effect)
 
 globalDefs = GlobalDefs(global_space, [ai] + users)

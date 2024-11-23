@@ -1,6 +1,41 @@
 import re
+
+import numpy as np
 from bica.intentionalities import InSpace, InVec
 from .gpt import gpt, Message
+
+
+sem_space1 = [
+    'вовлечь в диалог',
+    'выразить недовольство',
+    'задавать вопросы',
+    'обратить внимание',
+    'проявить инициативу',
+    'рассказать',
+    'выразить понимание',
+]
+
+sem_space2 = [
+    'выразить свое мнение',
+    'отрицать',
+    'оценить',
+    'поддержать',
+    'пояснить',
+    'предложить',
+    'предположить',
+    'уточнить',
+    'поделиться опытом',
+]
+
+sem_space3 = [
+    'выразить надежду',
+    'выразить обеспокоенность',
+    'выразить согласие',
+    'завершить разговор',
+    'подтвердить',
+    'поставить цель',
+    'убедить'
+]
 
 
 def numbers_from_reply(reply: str) -> list[float]: 
@@ -8,9 +43,9 @@ def numbers_from_reply(reply: str) -> list[float]:
     return [float(num) for num in numbers]
 
 
-def intensional_calc(space: InSpace, phrase: str) -> InVec:
-    cat_str = ', '.join(space.axes)
-    num = len(space.axes)
+def intensional_calc(intent: list[str], space: InSpace, phrase: str) -> InVec:
+    cat_str = ', '.join(intent)
+    num = len(intent)
     string = f'''
     Ты механизм по определению интенсивности интенcиональностей в речи человека, связанных с его поведением в различных социальных ситуациях.
     В твоем распоряжении только список из {num} интенcиональностей для угадывания(они перечислены через запятую): {cat_str}. 
@@ -27,7 +62,43 @@ def intensional_calc(space: InSpace, phrase: str) -> InVec:
     и не пиши порядковые номера.
     Перед ответом проверь правильность каждой цифры отдельно на правдоподобность и исправь если что-то нашёл.
     '''
+    
     question = Message('assistant', string)
     reply = gpt([question])
-    return InVec(space, numbers_from_reply(reply))
+    nums = np.array(list(numbers_from_reply(reply)))
+    nums.resize(len(intent))
+    print(nums)
+    if intent == sem_space1:
+        return InVec(space, nums * space_1_matrix)
+    elif intent == sem_space2:
+        return InVec(space, nums * space_2_matrix)
+    elif intent == sem_space3:
+        return InVec(space, nums * space_3_matrix)
+    else:
+        return InVec(set(), [])
 
+
+space_1_matrix = np.array([
+    [1, -0.2, 0.5, 0.3, 0.5, 0.75, 0.1],
+    [0.2, -0.8, 0.4, 0.2, 0.5, 0.7, 0.2],
+    [0.3, -0.1, 1, 0.7, 0.2, 0.2, 0.1],
+    [0.2, -0.2, 0.6, 1, 0.3, 0.3, 0.2],
+    [0.7, -0.1, 0.3, 0.3, 1, 0.4, 0.2]
+])
+
+space_2_matrix = np.array([
+    [0.95, -0.1, 0.1, 0.1, 0.5, 0.3, 0.1, 0.2, 0.34],
+    [0.1, 0.95, 0.1, -0.5, 0.2, 0.1, 0.1, 0.05, 0.05],
+    [0.8, -0.1, 0.2, 0.1, 0.4, 0.9, 0.1, 0.1, 0.2],
+    [0.05, -0.1, 0.3, 0.9, 0.1, 0.2, 0.1, 0.2, 0.1],
+    [0.2, 0.1, 0.2, 0.21, 0.9, 0.1, 0.2, 0.8, 0.4],
+    [0.7, -0.5, 0.6, 0.2, 0.4, 0.6, 0.4, 0.4, 0.7]
+])
+
+space_3_matrix = np.array([
+    [0.7, -0.7, 0.2, 0.1, 0.4, 0.8, 0.6],
+    [0.2, -0.5, 0.2, 0.1, 0.4, 0.2, 0.3],
+    [0.6, -0.4, 0.5, 0.1, 0.3, 0.5, 0.1],
+    [0.5, -0.5, 0.2, 0.1, 0.5, 0.9, 0.1],
+    [0.2, 0.1, 0.2, 0.21, 0.5, 0.1 ,0.2],
+])
