@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 from openai import OpenAI
-
+from .openai_api_key import key
 
 
 
@@ -13,24 +13,26 @@ class Message:
 client = None
 
 def _real_gpt(messages: Iterable[Message]) -> str:
+    global client
     if client is None:
-        client = OpenAI()
+        client = OpenAI(api_key=key)
     def convert_msg(message: Message):
         return {
             "role": message.role,
-            "content": messages.content
+            "content": message.content
         }
     stream = client.chat.completions.create(
-        model="gpt-3.5",
+        model="gpt-3.5-turbo",
         messages=map(convert_msg, messages),
     )
-    return stream.choices[0].message
+    return stream.choices[0].message.content
 
 def _gpt_stub(messages: Iterable[Message]) -> str:
-    reply = "1, 1, 1, 1, 1, 1, 1, 1"
-    print(f'gpt request. returning "{reply}"')
-    return reply
+    _real_gpt(messages)
+    # reply = "1, 1, 1, 1, 1, 1, 1, 1"
+    # print(f'gpt request. returning "{reply}"')
+    # return reply
 
 def gpt(messages: Iterable[Message]) -> str:
-    return _gpt_stub(messages)
+    return _real_gpt(messages)
     

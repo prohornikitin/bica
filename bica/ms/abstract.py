@@ -4,10 +4,10 @@ from typing import Any, Generic, TypeVar, override
 
 from utils import todo
 
-from ..intentionalities import InSpace, InVec
+from ..intensions import InSpace, InVec
 
 from .interface import IMoralSchema, MsState
-from ..base import Actor, Role, ActionId
+from ..base import Actor, Role
 
 
 @dataclass

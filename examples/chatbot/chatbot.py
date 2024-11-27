@@ -3,13 +3,13 @@ from enum import StrEnum, auto
 from functools import reduce
 from typing import override
 
-from bica.intentionalities import InSpace, InVec
+from bica.intensions import InSpace, InVec
 from bica.ms.abstract import AbsMoralSchema, Agency, Fabula
-from bica.base import Action, Actor, ActorId, ActionId, ActionEffect
+from bica.base import Action, Actor, ObjectId, ActionId, ActionEffect
 from bica.globals import AbsGlobals, IGlobals
 from bica.ms.interface import MsState
-from bica.main import ActionRequest, Main
-from .intentionalities import intensional_calc, sem_space1, sem_space2, sem_space3
+from bica.bica import ActionRequest, Bica
+from .intensions import intensional_calc, sem_space1, sem_space2, sem_space3
 from .gpt import gpt, Message
 from . import prompts
 
@@ -36,7 +36,7 @@ class TalkPhase:
 
 @dataclass
 class FabulaNode:
-    state: dict[ActorId, TalkPhase]
+    state: dict[ObjectId, TalkPhase]
 
     def __hash__(self):
         return id(self)
@@ -89,13 +89,17 @@ ai = Actor('ai', InVec(global_space))
 users = [
     Actor(f'user_{i+1}', InVec(global_space)) for i in range(3)
 ]
+actors = [ai] + users
 
 
 class GlobalDefs(AbsGlobals):
-    def __init__(self, space: InSpace, Actors: list[Actor]):
+    def __init__(self, space: InSpace, actors: list[Actor]):
         super().__init__(0.1, space)
-        self._actors = [ai] + users
-        self.messages = [Message('assistant', prompts.initial)]
+        self._actors = actors
+        initial_msg = Message('assistant', prompts.initial)
+        self.history = {
+            f'user_{i+1}': [initial_msg] for i in range(3)
+        }
     
     @override
     def actions(self) -> list[Action]:
@@ -106,17 +110,17 @@ class GlobalDefs(AbsGlobals):
         return self._actors
     
     @override
-    def actor_by_id(self, id: ActorId) -> Actor:
+    def actor_by_id(self, id: ObjectId) -> Actor:
         return next(filter(lambda x: x.id == id, self.actors()))
 
     @override
-    def execute(self, action_id: ActionId, author: Actor, recipient: Actor) -> ActionEffect:
+    def execute(self, action_id: ActionId, author: Actor, target: Actor) -> ActionEffect:
         if author.id == 'ai':
-            return self.ai_action(action_id, author, recipient)
+            return self.ai_action(action_id, author, target)
         else:
             return self.user_action(action_id, author)
     
-    def ai_action(self, action_id: ActionId, author: Actor, recipient: Actor) -> ActionEffect:
+    def ai_action(self, action_id: ActionId, author: Actor, target: Actor) -> ActionEffect:
         if action_id == ActionIdEnum.acquaintance_talk:
             prompt = prompts.phase1
         elif action_id == ActionIdEnum.acquaintance_to_interests_talk:
@@ -129,15 +133,17 @@ class GlobalDefs(AbsGlobals):
             prompt = prompts.phase3
         elif action_id == ActionIdEnum.finish_talk:
             prompt = prompts.phase_finish
-        prompt = prompts.changed_message(self.messages[-1]) + prompt
-        reply = gpt(self.messages + [Message('assistant', prompt)])
-        print(f'{author.id} say: {reply}')
-        self.messages.append(Message('assistant', reply))
+        local_history = self.history[target.id]
+        prompt = prompts.changed_message(local_history[-1]) + prompt
+        reply = gpt(local_history + [Message('assistant', prompt)])
+        print(f'{author.id} say to {target.id}: {reply}')
+        local_history.append(Message('assistant', reply))
         return ActionEffect(InVec(self.space), InVec(self.space))
 
     def user_action(self, action_id: ActionId, author: Actor) -> ActionEffect:
-        text = input(f'{author.id} say: ')
-        self.messages.append(Message('user', text))
+        local_history = self.history[author.id]
+        text = input(f'{author.id} say to: ')
+        local_history.append(Message('user', text))
         phase = phases[0]
         if action_id == ActionIdEnum.common_interests_talk:
             phase = phases[1]
@@ -146,7 +152,7 @@ class GlobalDefs(AbsGlobals):
         effect = intensional_calc(phase.sem_space, phase.initial_feelings.space, text).unproject(InVec(self.space))
         return ActionEffect(InVec(self.space), effect)
 
-globalDefs = GlobalDefs(global_space, [ai] + users)
+globalDefs = GlobalDefs(global_space, actors)
 
 
 fabula_nodes = [
@@ -173,7 +179,7 @@ class CommonAiMs(AbsMoralSchema[None, None]):
 
     def __init__(self,
         globals: IGlobals,
-        user: Actor,
+        user: ObjectId,
         fabula: Fabula[FabulaNode, TalkPhase]
     ):
         initial_feelings = fabula.plan[0].initial_feelings
@@ -186,9 +192,9 @@ class CommonAiMs(AbsMoralSchema[None, None]):
         self._globals = globals
 
     @override
-    def calc_likelihood(self, actionId: ActionId, recipient: Actor) -> float:
+    def calc_likelihood(self, actionId: ActionId, target: Actor) -> float:
         available_action = self.fabula.plan[0].available_action 
-        if actionId == available_action and recipient != self.author():
+        if actionId == available_action and target != self.author():
             return 1.0
         else:
             return 0.0
@@ -248,7 +254,7 @@ class UserMs(AbsMoralSchema[None, None]):
         self._globals = globals
 
     @override
-    def calc_likelihood(self, actionId: ActionId, recipient: Actor) -> float:
+    def calc_likelihood(self, actionId: ActionId, target: Actor) -> float:
         if actionId == ActionIdEnum.user_talk:
             return 1.0
         else:
@@ -276,13 +282,14 @@ schemas = {
     users[2].id: [UserMs(globalDefs, users[2])],
 }
 
-bica = Main(schemas, globalDefs)
+bica = Bica(schemas, globalDefs)
 
+bica.execute_request(ActionRequest(users[0]))
 while True:
     response = bica.execute_request(ActionRequest(ai.id))
     if response is None:
         break
-    _, recipient = response
-    bica.execute_request(ActionRequest(recipient.id))
+    _, target = response
+    bica.execute_request(ActionRequest(target.id))
 
 print('goal achieved')

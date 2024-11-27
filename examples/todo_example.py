@@ -2,7 +2,7 @@ from utils import todo; todo()
 
 from typing import override
 
-from bica.intentionalities import InSpace, InVec
+from bica.intensions import InSpace, InVec
 from bica.ms.abstract import AbsMoralSchema
 from bica.base import Action, ActionEffect, Actor
 from bica.globals import AbsGlobals

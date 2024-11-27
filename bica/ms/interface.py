@@ -1,10 +1,9 @@
-from collections.abc import Iterable
 from dataclasses import dataclass, field as field_init
 from enum import StrEnum, auto
 from typing import Any, Generic, TypeVar
 from utils import todo
 
-from ..intentionalities import InSpace, InVec
+from ..intensions import InSpace, InVec
 from ..base import ActionId, Actor, Role
 
     
@@ -37,7 +36,7 @@ class IMoralSchema:
     agency: Agency
     fabula: Fabula[Node, PlanItem]
 
-    def calc_likelihood(self, actionId: ActionId, recipient: Actor) -> float:
+    def calc_likelihood(self, actionId: ActionId, target: Actor) -> float:
         todo()
     
     #only called if schema is active

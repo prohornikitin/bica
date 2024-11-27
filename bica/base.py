@@ -1,25 +1,29 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from .intentionalities import InVec
+from .intensions import InVec
 
 
 type ActionId = str
-type ActorId = str
+type ObjectId = str
 type Role = str
 
 
 @dataclass
 class ActionEffect:
     on_author: InVec
-    on_recipient: InVec
-    weight: float = 1.0
-
+    on_target: InVec
+    author_weight: float = 1.0
+    target_weight: float = 1.0
 
 @dataclass(unsafe_hash=True)
-class Actor:
-    id: ActorId
+class Object:
+    id: ObjectId
     appraisal: InVec
+
+
+class Actor(Object):
+    pass
 
 @dataclass
 class Action[Data]:

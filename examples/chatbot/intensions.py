@@ -1,7 +1,7 @@
 import re
 
 import numpy as np
-from bica.intentionalities import InSpace, InVec
+from bica.intensions import InSpace, InVec
 from .gpt import gpt, Message
 
 
