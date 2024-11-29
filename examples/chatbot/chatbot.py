@@ -5,7 +5,7 @@ from typing import override
 
 from bica.intensions import InSpace, InVec
 from bica.ms.abstract import AbsMoralSchema, Agency, Fabula
-from bica.base import Action, Actor, ObjectId, ActionId, ActionEffect
+from bica.base import Action, Actor, Object, ObjectId, ActionId, ActionEffect
 from bica.globals import AbsGlobals, IGlobals
 from bica.ms.interface import MsState
 from bica.bica import ActionRequest, Bica
@@ -29,7 +29,7 @@ class ActionIdEnum(StrEnum):
 class TalkPhase:
     available_action: ActionIdEnum
     initial_feelings: InVec
-    sem_space: set[str]
+    sem_space: list[str]
 
     def __hash__(self):
         return id(self)
@@ -82,7 +82,7 @@ phases = [
 
 
 axes = map(lambda x: x.initial_feelings.space.axes, phases)
-global_space = InSpace(reduce(lambda acc, x: set(acc)|set(x), axes))
+global_space = InSpace(reduce(lambda acc, x: list(set(acc)|set(x)), axes))
 
 
 ai = Actor('ai', InVec(global_space))
@@ -95,32 +95,22 @@ actors = [ai] + users
 class GlobalDefs(AbsGlobals):
     def __init__(self, space: InSpace, actors: list[Actor]):
         super().__init__(0.1, space)
-        self._actors = actors
+        self.actors = dict(map(lambda a: (a.id,a), actors))
+        self.objects = self.actors
+        self.actions = dict(map(lambda id: (id, Action(id)), ActionIdEnum))
         initial_msg = Message('assistant', prompts.initial)
         self.history = {
             f'user_{i+1}': [initial_msg] for i in range(3)
         }
     
     @override
-    def actions(self) -> list[Action]:
-        return list(map(Action, ActionIdEnum))
-    
-    @override
-    def actors(self):
-        return self._actors
-    
-    @override
-    def actor_by_id(self, id: ObjectId) -> Actor:
-        return next(filter(lambda x: x.id == id, self.actors()))
-
-    @override
-    def execute(self, action_id: ActionId, author: Actor, target: Actor) -> ActionEffect:
+    def execute(self, action_id: ActionId, author: Actor, target: Object) -> ActionEffect:
         if author.id == 'ai':
             return self.ai_action(action_id, author, target)
         else:
             return self.user_action(action_id, author)
     
-    def ai_action(self, action_id: ActionId, author: Actor, target: Actor) -> ActionEffect:
+    def ai_action(self, action_id: ActionId, author: Actor, target: Object) -> ActionEffect:
         if action_id == ActionIdEnum.acquaintance_talk:
             prompt = prompts.phase1
         elif action_id == ActionIdEnum.acquaintance_to_interests_talk:
@@ -142,7 +132,7 @@ class GlobalDefs(AbsGlobals):
 
     def user_action(self, action_id: ActionId, author: Actor) -> ActionEffect:
         local_history = self.history[author.id]
-        text = input(f'{author.id} say to: ')
+        text = input(f'{author.id} say: ')
         local_history.append(Message('user', text))
         phase = phases[0]
         if action_id == ActionIdEnum.common_interests_talk:
@@ -174,12 +164,12 @@ for i in range(3**3-1):
 
 
 
-class CommonAiMs(AbsMoralSchema[None, None]):
+class CommonAiMs(AbsMoralSchema[FabulaNode, TalkPhase]):
     _globals: IGlobals
 
     def __init__(self,
         globals: IGlobals,
-        user: ObjectId,
+        user: Object,
         fabula: Fabula[FabulaNode, TalkPhase]
     ):
         initial_feelings = fabula.plan[0].initial_feelings
@@ -192,7 +182,7 @@ class CommonAiMs(AbsMoralSchema[None, None]):
         self._globals = globals
 
     @override
-    def calc_likelihood(self, actionId: ActionId, target: Actor) -> float:
+    def calc_likelihood(self, actionId: ActionId, target: Object) -> float:
         available_action = self.fabula.plan[0].available_action 
         if actionId == available_action and target != self.author():
             return 1.0
@@ -254,7 +244,7 @@ class UserMs(AbsMoralSchema[None, None]):
         self._globals = globals
 
     @override
-    def calc_likelihood(self, actionId: ActionId, target: Actor) -> float:
+    def calc_likelihood(self, actionId: ActionId, target: Object) -> float:
         if actionId == ActionIdEnum.user_talk:
             return 1.0
         else:
@@ -273,7 +263,7 @@ schemas = {
     ai.id: [
         CommonAiMs(
             globalDefs,
-            users[i], 
+            users[i],
             Fabula(fabula_nodes, fabula_connections, phases)
         ) for i in range(3)
     ],
@@ -284,7 +274,7 @@ schemas = {
 
 bica = Bica(schemas, globalDefs)
 
-bica.execute_request(ActionRequest(users[0]))
+bica.execute_request(ActionRequest(users[0].id))
 while True:
     response = bica.execute_request(ActionRequest(ai.id))
     if response is None:

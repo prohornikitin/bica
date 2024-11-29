@@ -64,7 +64,7 @@ class InVec:
             data.append(self[axis])
         return InVec(new_space, data)
     
-    def unproject(self, old_unprojected: Optional[Self]):
+    def unproject(self, old_unprojected: Self):
         old_space = old_unprojected.space
         data = []
         for axis in old_space.axes:

@@ -75,7 +75,7 @@ def intensional_calc(intent: list[str], space: InSpace, phrase: str) -> InVec:
     elif intent == sem_space3:
         return InVec(space, nums * space_3_matrix)
     else:
-        return InVec(set(), [])
+        return InVec(InSpace([]), [])
 
 
 space_1_matrix = np.array([

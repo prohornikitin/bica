@@ -6,26 +6,13 @@ from utils import todo
 
 from ..intensions import InSpace, InVec
 
-from .interface import IMoralSchema, MsState
+from .interface import Agency, Fabula, IMoralSchema, MsState
 from ..base import Actor, Role
-
-
-@dataclass
-class Agency():
-    perspective: Role
-    feelings: InVec
-    mood: Any = None
 
 
 Node = TypeVar('Node')
 PlanItem = TypeVar('PlanItem')
 
-
-@dataclass
-class Fabula(Generic[Node, PlanItem]):
-    nodes: list[Node] = dataclasses.field(default_factory = list)
-    connections: dict[Node, tuple[Node]] = dataclasses.field(default_factory = dict)
-    plan: list[PlanItem] = dataclasses.field(default_factory = list)
 
 class AbsMoralSchema(IMoralSchema, Generic[Node, PlanItem]):
     actors_binded_to_roles: dict[Role, Actor]

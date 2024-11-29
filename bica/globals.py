@@ -2,7 +2,7 @@ import random
 from typing import override
 
 from bica.ms.interface import IMoralSchema
-from .base import Action, ActionEffect, Actor, ActionId, ObjectId
+from .base import Action, ActionEffect, Actor, ActionId, Object, ObjectId, ActorId
 from .intensions import InSpace
 from utils import todo
 
@@ -10,20 +10,14 @@ from utils import todo
 class IGlobals:
     r: float
     space: InSpace
+    actors: dict[ActorId, Actor]
+    actions: dict[ActionId, Action]
+    objects: dict[ObjectId, Object]
 
-    def actions(self) -> list[Action]:
-        todo()
-    
-    def actors(self) -> list[Actor]:
-        todo()
-
-    def actor_by_id(self, id: ObjectId) -> Actor:
+    def choose_action_and_target(self, probabilities: dict[tuple[ActionId, Object], float]) -> tuple[ActionId, Object]:
         todo()
 
-    def choose_action_and_target(self, probabilities: dict[tuple[ActionId, Actor], float]) -> tuple[ActionId, Actor]:
-        todo()
-
-    def execute(self, action_id: ActionId, author: Actor, target: Actor) -> ActionEffect:
+    def execute(self, action_id: ActionId, author: Actor, target: Object) -> ActionEffect:
         todo()
 
 
@@ -34,7 +28,7 @@ class AbsGlobals(IGlobals):
         self.space = space
     
     @override
-    def choose_action_and_target(self, probabilities: dict[tuple[ActionId, Actor], float]):
+    def choose_action_and_target(self, probabilities: dict[tuple[ActionId, Object], float]):
         return random.choices(
             list(probabilities.keys()),
             weights = list(probabilities.values()),

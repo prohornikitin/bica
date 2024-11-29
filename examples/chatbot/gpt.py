@@ -27,11 +27,10 @@ def _real_gpt(messages: Iterable[Message]) -> str:
     )
     return stream.choices[0].message.content
 
-def _gpt_stub(messages: Iterable[Message]) -> str:
-    _real_gpt(messages)
-    # reply = "1, 1, 1, 1, 1, 1, 1, 1"
-    # print(f'gpt request. returning "{reply}"')
-    # return reply
+# def _gpt_stub(messages: Iterable[Message]) -> str:
+#     reply = "1, 1, 1, 1, 1, 1, 1, 1"
+#     print(f'gpt request. returning "{reply}"')
+#     return reply
 
 def gpt(messages: Iterable[Message]) -> str:
     return _real_gpt(messages)

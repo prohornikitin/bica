@@ -6,6 +6,7 @@ from .intensions import InVec
 
 type ActionId = str
 type ObjectId = str
+type ActorId = str
 type Role = str
 
 
