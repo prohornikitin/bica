@@ -24,6 +24,8 @@ class InVec:
         self.space = space
         if len(data) == 0:
             self._by_name = dict.fromkeys(space.axes, 0)
+        elif not isinstance(data[-1], int) and not isinstance(data[-1], float):
+            raise Exception(f'da {data}')
         else:
             self._by_name = dict()
             for k, v in zip(space.axes, data):
@@ -78,6 +80,7 @@ class InVec:
         n = 0.0
         for v in self._by_name.values():
             n += v * v
+        # print(self._by_name)
         return sqrt(n)
     
     def __iter__(self):

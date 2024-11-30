@@ -1,104 +1,91 @@
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
-from bica.base import Action, ActionEffect, ActorId
-from .base import vec
+from pathlib import Path
+
+import numpy as np
+from bica.base import Action, ActionEffect
+from .intensions import vec
+# from openpyxl import load_workbook, Workbook, Worksheet
+import pandas as pd
 
 
 
 
-
-# Agent = ''
-
-# Hangeable = {Object.Shotgun, Object.Hammer, Object.Rake}
-# Movable = set(Object).difference() 
-
-
-# @dataclass
-# class Holding:
-#     what: Any
-
-type S = State
-type Effect = ActionEffect
-
-
-@dataclass
+@dataclass(unsafe_hash=True)
 class ActionData:
     effect: ActionEffect
-    required_state: list[State]
-    required_author: Optional[ActorId] = None
+    message_template: str
+    prior: float
+    
+    author: str
+    author_state_before: str|None
+    author_pos_before:   str|None
+    author_prerequisite: str|None
+    author_next_state: str|None
+    author_next_pos:   str|None
+    author_followup: str|None
+
+    object: str
+    object_state_before: str|None
+    object_pos_before:   str|None
+    object_prerequisite: str|None
+    object_next_state: str|None
+    object_next_pos:   str|None
+    object_followup: str|None
+
+    target: str
+    target_state_before: str|None
+    target_pos_before:   str|None
+    target_prerequisite: str|None
+    target_next_state: str|None
+    target_next_pos:   str|None
+    target_followup: str|None
+    
+
+def parse_action(data: pd.Series) -> Action:
+    id = data['name'] 
+    effect = ActionEffect(
+        vec(list(map(float, [data['v1'], data['a1'], data['d1']]))),
+        vec(list(map(float, [data['v2'], data['a2'], data['d2']]))),
+        float(data['w1']),
+        float(data['w2']),
+    )
+
+    actionData = ActionData(
+        effect,
+        data['message'],
+        float(data['prior']),
+        
+        data['author'] or 'agent',
+        data['astate1'],
+        data['apos1'],
+        data['apre'],
+        data['astate2'],
+        data['apos2'],
+        data['apost'],
+
+        data['object'] or 'nothing',
+        data['ostate1'],
+        data['opos1'],
+        data['opre'],
+        data['ostate2'],
+        data['opos2'],
+        data['opost'],
+
+        data['target'] or 'nothing',
+        data['tstate1'],
+        data['tpos1'],
+        data['tpre'],
+        data['tstate2'],
+        data['tpos2'],
+        data['tpost'],
+    )
+    return Action(
+        id,
+        actionData
+    )
 
 
-Action('fall',        ActionData(Effect(vec(), vec(), 0, 0), [S.OnEdge])),
-Action('rat-run',     ActionData(Effect(vec(), vec(), 0, 0), [S.Present, S.NotInTrash])),
-Action('drop',        ActionData(Effect(vec(-1,-1,-1), vec(), 0.1, 0), [S.Present, S.Standing])),
-Action('rip',         ActionData(Effect(vec(-0.7, 0.7, 0.9), vec(), 0.1, 0), [S.Present, S.Standing])),
-Action('is-shot',     ActionData(Effect(vec(), vec(), 0, 0), [S.Present, S.NotInTrash])),
-Action('take',        ActionData(Effect(vec(1,1,1), vec(), 0.1, 0), [S.Present, S.Standing, S.NotHolding])),
-Action('walkto',      ActionData(Effect(vec(), vec(), 0, 0), [S.Present, S.NotInTrash, S.Called])),
-Action('banana-peel', ActionData(Effect(vec(0.5, -1, 1, -1), vec(), 0, 0))),
-Action('chandelier',  ActionData(Effect(vec(0.3, -0.4, 0.5, -0.3), vec(), 0, 0), [S.Present, S.Standing])),
-Action('gun-step',    ActionData(Effect(vec(), vec(), ))),
-Action('hammer-st'),
-Action('notice'),
-Action('rake-step'),
-Action('vodka-st'),
-Action('beg'),
-Action('chase'),
-Action('expel'),
-Action('fight'),
-Action('fist'),
-Action('flee'),
-Action('greet'),
-Action('ignore'),
-Action('kick'),
-Action('mid-finger'),
-Action('nose'),
-Action('pat'),
-Action('point'),
-Action('ruffle'),
-Action('slap'),
-Action('trash'),
-Action('accept'),
-Action('decline'),
-Action('greet-ignore'),
-Action('greet-respect'),
-Action('brush'),
-Action('enter'),
-Action('intotrash'),
-Action('jump'),
-Action('leave'),
-Action('outoftrash'),
-Action('ruffle-self'),
-Action('walking'),
-Action('putright'),
-Action('putwrong'),
-Action('set-flowers'),
-Action('flip-flowers'),
-Action('load-gun'),
-Action('close-trash'),
-Action('open-trash'),
-Action('break-chair'),
-Action('break-rake'),
-Action('hammer-mir'),
-Action('hammer-rat'),
-Action('rake-pepper'),
-Action('shoot-mirror'),
-Action('shoot-rat'),
-Action('hammer'),
-Action('offer'),
-Action('shoot-other'),
-Action('sprinkle'),
-Action('eat-apple'),
-Action('eat-banana'),
-Action('mirror-funny'),
-Action('mirror-smart'),
-Action('pepper'),
-Action('rise'),
-Action('shoot-self'),
-Action('shotgun'),
-Action('sit'),
-Action('vodka'),
-Action('attack'),
-Action('backaway'),
-Action('
+excel = pd.read_excel(
+    Path(__file__).parent / 'schema.xlsx', header=3, dtype=str
+)
+actions = list(map(lambda x: parse_action(x[1]), excel.replace(np.nan, None).iterrows()))

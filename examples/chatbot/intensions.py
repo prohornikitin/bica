@@ -65,15 +65,14 @@ def intensional_calc(intent: list[str], space: InSpace, phrase: str) -> InVec:
     
     question = Message('assistant', string)
     reply = gpt([question])
-    nums = np.array(list(numbers_from_reply(reply)))
+    nums = np.array(numbers_from_reply(reply))
     nums.resize(len(intent))
-    print(nums)
     if intent == sem_space1:
-        return InVec(space, nums * space_1_matrix)
+        return InVec(space, space_1_matrix.dot(nums))
     elif intent == sem_space2:
-        return InVec(space, nums * space_2_matrix)
+        return InVec(space, space_2_matrix.dot(nums))
     elif intent == sem_space3:
-        return InVec(space, nums * space_3_matrix)
+        return InVec(space, space_3_matrix.dot(nums))
     else:
         return InVec(InSpace([]), [])
 

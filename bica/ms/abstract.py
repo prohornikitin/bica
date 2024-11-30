@@ -1,31 +1,25 @@
-from dataclasses import dataclass
-import dataclasses
-from typing import Any, Generic, TypeVar, override
+from typing import Generic, TypeVar, override
 
 from utils import todo
 
-from ..intensions import InSpace, InVec
+from ..intensions import InSpace
 
 from .interface import Agency, Fabula, IMoralSchema, MsState
 from ..base import Actor, Role
 
 
 Node = TypeVar('Node')
+Arc = TypeVar('Arc')
 PlanItem = TypeVar('PlanItem')
 
 
-class AbsMoralSchema(IMoralSchema, Generic[Node, PlanItem]):
-    actors_binded_to_roles: dict[Role, Actor]
-    space: InSpace
-    agency: Agency
-    fabula: Fabula[Node, PlanItem]
-
+class AbsMoralSchema(IMoralSchema, Generic[Node, Arc, PlanItem]):
     def __init__(
         self,
         space: InSpace,
         actors_binded_to_roles: dict[Role, Actor],
         agency: Agency,
-        fabula: Fabula[Node, PlanItem] = Fabula(),
+        fabula: Fabula[Node, Arc, PlanItem] = Fabula(),
     ):
         super().__init__()
         self.space = space

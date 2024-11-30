@@ -1,4 +1,6 @@
-# import bica.ms.interface
-# from example import 
-
 from examples.chatbot import chatbot
+
+from examples.clownery import clowns
+
+# chatbot.main()
+# clowns.main()
